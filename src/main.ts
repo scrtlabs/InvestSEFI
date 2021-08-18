@@ -182,6 +182,7 @@ import BigNumber from "bignumber.js";
       },
       // 5th msg - invest the SEFI-SSCRT LP tokens in the rewards pool
       // this will fail the entire tx if we didn't get enough LP tokens as simulated in the previous msg
+      // ~ 500k gas
       {
         contractAddress: LP_TOKEN,
         contractCodeHash: LP_TOKEN_HASH,
@@ -199,7 +200,8 @@ import BigNumber from "bignumber.js";
       500_000 /* swap */ +
         100_000 /* allowance */ +
         100_000 /* allowance */ +
-        400_000 /* provide */
+        400_000 /* provide */ +
+        500_000 /* invest  */
     )
   );
 })();
