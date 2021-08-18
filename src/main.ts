@@ -4,46 +4,57 @@ import {
   Secp256k1Pen,
   pubkeyToAddress,
   encodeSecp256k1Pubkey,
+  BroadcastMode,
 } from "secretjs";
 import { StdFee } from "secretjs/types/types";
 import BigNumber from "bignumber.js";
+import * as sha256 from "sha256";
+import * as dotenv from "dotenv";
+dotenv.config();
+
+// define our contracts
+const TOKEN0_CONTRACT = "secret15l9cqgz5uezgydrglaak5ahfac69kmx2qpd6xt"; // SEFI
+const TOKEN0_CONTRACT_HASH =
+  "c7fe67b243dfedc625a28ada303434d6f5a46a3086e7d2b5063a814e9f9a379d";
+
+const TOKEN1_CONTRACT = "secret1k0jntykt7e4g3y88ltc60czgjuqdy4c9e8fzek"; // SSCRT
+const TOKEN1_CONTRACT_HASH =
+  "af74387e276be8874f07bec3a87023ee49b0e7ebe08178c49d0a49c3c98ed60e";
+
+const PAIR_CONTRACT = "secret1rgky3ns9ua09rt059049yl0zqf3xjqxne7ezhp"; // SEFI-SSCRT
+const PAIR_CONTRACT_HASH =
+  "0dfd06c7c3c482c14d36ba9826b83d164003f2b0bb302f222db72361e0927490";
+
+const LP_TOKEN = "secret1709qy2smh0r7jjac0qxfgjsqn7zpvgthsdz025"; // of SEFI-SSCRT
+const LP_TOKEN_HASH =
+  "ea3df9d5e17246e4ef2f2e8071c91299852a07a84c4eb85007476338b7547ce8";
+
+const EARN_CONTRACT = "secret1097s3zmexc4mk9s2rdv3gs6r76x9dn9rmv86c7"; // of SEFI_SSCRT
 
 (async () => {
-  const seed = EnigmaUtils.GenerateNewSeed();
-  const pen = await Secp256k1Pen.fromMnemonic(
-    "cost member exercise evoke isolate gift cattle move bundle assume spell face balance lesson resemble orange bench surge now unhappy potato dress number acid"
-  );
+  let tx_encryption_seed = EnigmaUtils.GenerateNewSeed();
+  if (process.env.TX_ENCRYPTION_SEED) {
+    tx_encryption_seed = Uint8Array.from(
+      sha256(process.env.TX_ENCRYPTION_SEED, { asBytes: true })
+    );
+  }
+
+  const pen = await Secp256k1Pen.fromMnemonic(process.env.MNEMONICS);
   const address = pubkeyToAddress(encodeSecp256k1Pubkey(pen.pubkey), "secret");
   const secretjs = new SigningCosmWasmClient(
     "https://bridge-api-manager.azure-api.net",
     address,
     (signBytes) => pen.sign(signBytes),
-    seed
+    tx_encryption_seed,
+    null,
+    BroadcastMode.Sync
   );
 
   // let's say we want to invest SEFI in the SEFI-SSCRT pool
-
-  const TOTAL_TOKEN0_TO_INVEST = 10_000_000; // TODO fetch
+  const TOTAL_TOKEN0_TO_INVEST = 5_000_000; // TODO fetch
   const TOKEN0_TO_INVEST = new BigNumber(TOTAL_TOKEN0_TO_INVEST / 2); // TODO handle rounding
-
-  // define our contracts
-  const TOKEN0_CONTRACT = "secret15l9cqgz5uezgydrglaak5ahfac69kmx2qpd6xt"; // SEFI
-  const TOKEN0_CONTRACT_HASH =
-    "c7fe67b243dfedc625a28ada303434d6f5a46a3086e7d2b5063a814e9f9a379d";
-
-  const TOKEN1_CONTRACT = "secret1k0jntykt7e4g3y88ltc60czgjuqdy4c9e8fzek"; // SSCRT
-  const TOKEN1_CONTRACT_HASH =
-    "af74387e276be8874f07bec3a87023ee49b0e7ebe08178c49d0a49c3c98ed60e";
-
-  const PAIR_CONTRACT = "secret1rgky3ns9ua09rt059049yl0zqf3xjqxne7ezhp"; // SEFI-SSCRT
-  const PAIR_CONTRACT_HASH =
-    "0dfd06c7c3c482c14d36ba9826b83d164003f2b0bb302f222db72361e0927490";
-
-  const LP_TOKEN = "secret1709qy2smh0r7jjac0qxfgjsqn7zpvgthsdz025"; // of SEFI-SSCRT
-  const LP_TOKEN_HASH =
-    "ea3df9d5e17246e4ef2f2e8071c91299852a07a84c4eb85007476338b7547ce8";
-
-  const EARN_CONTRACT = "secret1097s3zmexc4mk9s2rdv3gs6r76x9dn9rmv86c7"; // of SEFI_SSCRT
+  console.log("TOTAL_TOKEN0_TO_INVEST", TOTAL_TOKEN0_TO_INVEST / 1e6);
+  console.log("TOKEN0_TO_INVEST", TOKEN0_TO_INVEST.div(1e6).toFixed(6));
 
   // it's faster to query both pool sizes via {pool:{}} and than do the swap and LP math here
   const poolAnswer: PoolAnswer = await secretjs.queryContractSmart(
@@ -64,6 +75,15 @@ import BigNumber from "bignumber.js";
     ).amount
   );
 
+  console.log(
+    "CURRENT_TOKEN0_POOL_SIZE",
+    CURRENT_TOKEN0_POOL_SIZE.div(1e6).toFixed(6)
+  );
+  console.log(
+    "CURRENT_TOKEN1_POOL_SIZE",
+    CURRENT_TOKEN1_POOL_SIZE.div(1e6).toFixed(6)
+  );
+
   // simulate the swap operation
   const {
     return_amount,
@@ -78,6 +98,8 @@ import BigNumber from "bignumber.js";
   );
 
   const TOKEN1_TO_INVEST = return_amount;
+
+  console.log("TOKEN1_TO_INVEST", TOKEN1_TO_INVEST.div(1e6).toFixed(6));
 
   // simulate the provide_liqudity operation
   const AFTER_SWAP_TOKEN0_POOL_SIZE =
@@ -95,10 +117,15 @@ import BigNumber from "bignumber.js";
     )
   );
 
+  console.log(
+    "EXPECTED_LP_TOKENS_AFTER_PROVIDE",
+    EXPECTED_LP_TOKENS_AFTER_PROVIDE.div(1e6).toFixed(6)
+  );
+
   // when setting expected_return=TOKEN1_TO_INVEST we force no more slippage during the tx
   // that's how we now know to LP TOKEN0_TO_INVEST SEFI + TOKEN1_TO_INVEST SSCRT
   // the transaction will fail if there's any slippage
-  secretjs.multiExecute(
+  const { transactionHash } = await secretjs.multiExecute(
     [
       // 1st msg - swap half our SEFI for SSCRT
       // this will fail the entire tx if there's any slippage
@@ -204,6 +231,24 @@ import BigNumber from "bignumber.js";
         500_000 /* invest  */
     )
   );
+
+  while (true) {
+    try {
+      const tx = await secretjs.restClient.txById(transactionHash, true);
+
+      if (!tx.raw_log.startsWith("[")) {
+        console.error(`Tx failed: ${tx.raw_log}`);
+      } else {
+        console.log(`Done:`, JSON.stringify(tx, null, 4));
+      }
+
+      break;
+    } catch (error) {
+      console.log("Still waiting for tx to commit on-chain...");
+    }
+
+    await sleep(5000);
+  }
 })();
 
 const gasPriceUscrt = 0.25;
@@ -276,4 +321,8 @@ export const compute_swap = (
 
 function btoa(binary: string): string {
   return Buffer.from(binary).toString("base64");
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
