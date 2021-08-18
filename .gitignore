@@ -3,6 +3,6 @@ node_modules
 dist
 dist-ssr
 *.local
-main.js
-main.js.map
+*.js
+*.js.map
 .env

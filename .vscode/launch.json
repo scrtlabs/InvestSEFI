@@ -7,9 +7,17 @@
     {
       "type": "pwa-node",
       "request": "launch",
-      "name": "Launch Program",
+      "name": "main",
       "skipFiles": ["<node_internals>/**"],
       "program": "${workspaceFolder}/src/main.js",
+      "preLaunchTask": "tsc: build - tsconfig.json"
+    },
+    {
+      "type": "pwa-node",
+      "request": "launch",
+      "name": "decrypt",
+      "skipFiles": ["<node_internals>/**"],
+      "program": "${workspaceFolder}/src/decrypt.js",
       "preLaunchTask": "tsc: build - tsconfig.json"
     }
   ]

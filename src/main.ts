@@ -51,10 +51,15 @@ const EARN_CONTRACT = "secret1097s3zmexc4mk9s2rdv3gs6r76x9dn9rmv86c7"; // of SEF
   );
 
   // let's say we want to invest SEFI in the SEFI-SSCRT pool
-  const TOTAL_TOKEN0_TO_INVEST = 5_000_000; // TODO fetch
+  const TOTAL_TOKEN0_TO_INVEST = 50_000_000; // TODO fetch
   const TOKEN0_TO_INVEST = new BigNumber(TOTAL_TOKEN0_TO_INVEST / 2); // TODO handle rounding
+
   console.log("TOTAL_TOKEN0_TO_INVEST", TOTAL_TOKEN0_TO_INVEST / 1e6);
-  console.log("TOKEN0_TO_INVEST", TOKEN0_TO_INVEST.div(1e6).toFixed(6));
+  console.log(
+    "TOKEN0_TO_INVEST",
+    TOKEN0_TO_INVEST.toFixed(0),
+    `(${TOKEN0_TO_INVEST.div(1e6).toFixed(6)})`
+  );
 
   // it's faster to query both pool sizes via {pool:{}} and than do the swap and LP math here
   const poolAnswer: PoolAnswer = await secretjs.queryContractSmart(
@@ -77,11 +82,13 @@ const EARN_CONTRACT = "secret1097s3zmexc4mk9s2rdv3gs6r76x9dn9rmv86c7"; // of SEF
 
   console.log(
     "CURRENT_TOKEN0_POOL_SIZE",
-    CURRENT_TOKEN0_POOL_SIZE.div(1e6).toFixed(6)
+    CURRENT_TOKEN0_POOL_SIZE.toFixed(0),
+    `(${CURRENT_TOKEN0_POOL_SIZE.div(1e6).toFixed(6)})`
   );
   console.log(
     "CURRENT_TOKEN1_POOL_SIZE",
-    CURRENT_TOKEN1_POOL_SIZE.div(1e6).toFixed(6)
+    CURRENT_TOKEN1_POOL_SIZE.toFixed(0),
+    `(${CURRENT_TOKEN1_POOL_SIZE.div(1e6).toFixed(6)})`
   );
 
   // simulate the swap operation
@@ -99,7 +106,15 @@ const EARN_CONTRACT = "secret1097s3zmexc4mk9s2rdv3gs6r76x9dn9rmv86c7"; // of SEF
 
   const TOKEN1_TO_INVEST = return_amount;
 
-  console.log("TOKEN1_TO_INVEST", TOKEN1_TO_INVEST.div(1e6).toFixed(6));
+  console.log(
+    "TOKEN1_TO_INVEST",
+    TOKEN1_TO_INVEST.toFixed(0),
+    `(${TOKEN1_TO_INVEST.div(1e6).toFixed(6)})`
+  );
+
+  if (TOKEN1_TO_INVEST.isNegative()) {
+    process.exit(0);
+  }
 
   // simulate the provide_liqudity operation
   const AFTER_SWAP_TOKEN0_POOL_SIZE =
@@ -115,11 +130,12 @@ const EARN_CONTRACT = "secret1097s3zmexc4mk9s2rdv3gs6r76x9dn9rmv86c7"; // of SEF
     TOKEN0_TO_INVEST.times(CURRENT_LP_TOKENS_TOTAL_SUPPLY).dividedToIntegerBy(
       AFTER_SWAP_TOKEN0_POOL_SIZE
     )
-  );
+  ).minus(1);
 
   console.log(
     "EXPECTED_LP_TOKENS_AFTER_PROVIDE",
-    EXPECTED_LP_TOKENS_AFTER_PROVIDE.div(1e6).toFixed(6)
+    EXPECTED_LP_TOKENS_AFTER_PROVIDE.toFixed(0),
+    `(${EXPECTED_LP_TOKENS_AFTER_PROVIDE.div(1e6).toFixed(6)})`
   );
 
   // when setting expected_return=TOKEN1_TO_INVEST we force no more slippage during the tx
@@ -135,12 +151,12 @@ const EARN_CONTRACT = "secret1097s3zmexc4mk9s2rdv3gs6r76x9dn9rmv86c7"; // of SEF
         contractCodeHash: TOKEN0_CONTRACT_HASH, // optional, faster
         handleMsg: {
           send: {
-            amount: TOKEN0_TO_INVEST.toFixed(),
+            amount: TOKEN0_TO_INVEST.toFixed(0),
             recipient: PAIR_CONTRACT,
             msg: btoa(
               JSON.stringify({
                 swap: {
-                  expected_return: TOKEN1_TO_INVEST.toFixed(),
+                  expected_return: TOKEN1_TO_INVEST.toFixed(0),
                 },
               })
             ),
@@ -157,7 +173,7 @@ const EARN_CONTRACT = "secret1097s3zmexc4mk9s2rdv3gs6r76x9dn9rmv86c7"; // of SEF
         handleMsg: {
           increase_allowance: {
             spender: PAIR_CONTRACT,
-            amount: TOKEN0_TO_INVEST.toFixed(),
+            amount: TOKEN0_TO_INVEST.toFixed(0),
           },
         },
       },
@@ -171,7 +187,7 @@ const EARN_CONTRACT = "secret1097s3zmexc4mk9s2rdv3gs6r76x9dn9rmv86c7"; // of SEF
         handleMsg: {
           increase_allowance: {
             spender: PAIR_CONTRACT,
-            amount: TOKEN1_TO_INVEST.toFixed(),
+            amount: TOKEN1_TO_INVEST.toFixed(0),
           },
         },
       },
@@ -191,7 +207,7 @@ const EARN_CONTRACT = "secret1097s3zmexc4mk9s2rdv3gs6r76x9dn9rmv86c7"; // of SEF
                     viewing_key: "", // required but always ignored
                   },
                 },
-                amount: TOKEN0_TO_INVEST.toFixed(),
+                amount: TOKEN0_TO_INVEST.toFixed(0),
               },
               {
                 info: {
@@ -201,7 +217,7 @@ const EARN_CONTRACT = "secret1097s3zmexc4mk9s2rdv3gs6r76x9dn9rmv86c7"; // of SEF
                     viewing_key: "", // required but always ignored
                   },
                 },
-                amount: TOKEN1_TO_INVEST.toFixed(),
+                amount: TOKEN1_TO_INVEST.toFixed(0),
               },
             ],
           },
@@ -215,7 +231,7 @@ const EARN_CONTRACT = "secret1097s3zmexc4mk9s2rdv3gs6r76x9dn9rmv86c7"; // of SEF
         contractCodeHash: LP_TOKEN_HASH,
         handleMsg: {
           send: {
-            amount: EXPECTED_LP_TOKENS_AFTER_PROVIDE.toFixed(),
+            amount: EXPECTED_LP_TOKENS_AFTER_PROVIDE.toFixed(0),
             recipient: EARN_CONTRACT,
             msg: btoa(JSON.stringify({ deposit: {} })),
           },
