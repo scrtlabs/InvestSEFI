@@ -29,7 +29,7 @@ const LP_TOKEN = "secret1709qy2smh0r7jjac0qxfgjsqn7zpvgthsdz025"; // of SEFI-SSC
 const LP_TOKEN_HASH =
   "ea3df9d5e17246e4ef2f2e8071c91299852a07a84c4eb85007476338b7547ce8";
 
-const EARN_CONTRACT = "secret1097s3zmexc4mk9s2rdv3gs6r76x9dn9rmv86c7"; // of SEFI_SSCRT
+const EARN_CONTRACT = "secret1097s3zmexc4mk9s2rdv3gs6r76x9dn9rmv86c7"; // of SEFI-SSCRT
 
 (async () => {
   let tx_encryption_seed = EnigmaUtils.GenerateNewSeed();
